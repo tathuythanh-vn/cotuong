@@ -6,8 +6,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-ARG VITE_SERVER_URL=http://localhost:4000
-ENV VITE_SERVER_URL=$VITE_SERVER_URL
+ARG VITE_SERVER_PORT=4000
+ENV VITE_SERVER_PORT=$VITE_SERVER_PORT
 RUN npm run build
 
 FROM nginx:1.27-alpine
