@@ -42,6 +42,7 @@ export function XiangqiBoard({
   onSelect,
 }: XiangqiBoardProps) {
   const [selected, setSelected] = useState<Position | null>(null);
+  const fileLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   const legalSet = useMemo(() => {
     return new Set(legalMoves.map((m) => `${m.x}-${m.y}`));
@@ -83,49 +84,62 @@ export function XiangqiBoard({
   }
 
   return (
-    <div className="grid grid-cols-9 gap-1 rounded-lg bg-amber-900 p-3">
-      {board.map((row, y) =>
-        row.map((cell, x) => {
-          const key = `${x}-${y}`;
-          const selectedCell = selected?.x === x && selected.y === y;
-          const legal = legalSet.has(key);
-          const isLastFrom = lastMove?.from.x === x && lastMove.from.y === y;
-          const isLastTo = lastMove?.to.x === x && lastMove.to.y === y;
+    <div className="inline-flex flex-col gap-2 rounded-2xl border-2 border-amber-950/70 bg-amber-700 p-3 shadow-2xl">
+      <div className="grid grid-cols-9 gap-1 px-1 text-center text-xs font-semibold text-amber-950/90">
+        {fileLabels.map((label) => (
+          <span key={`top-${label}`}>{label}</span>
+        ))}
+      </div>
 
-          return (
-            <div
-              key={key}
-              onClick={() => onCellClick(x, y)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => onCellClick(x, y)}
-              className={[
-                'flex h-16 w-16 items-center justify-center rounded border text-2xl font-bold',
-                cell ? 'cursor-pointer' : 'cursor-default',
-                selectedCell
-                  ? 'border-blue-400 bg-blue-100'
-                  : 'border-amber-700 bg-amber-200',
-                legal ? 'ring-2 ring-emerald-500' : '',
-                isLastFrom || isLastTo ? 'ring-2 ring-yellow-500' : '',
-              ].join(' ')}
-            >
-              {cell && (
-                <div
-                  draggable={canMove && ownPiece(cell)}
-                  onDragStart={() => {
-                    setSelected({ x, y });
-                    onSelect({ x, y });
-                  }}
-                  className={
-                    isRedPiece(cell) ? 'text-red-700' : 'text-slate-900'
-                  }
-                >
-                  {pieceLabels[cell as PieceCode]}
-                </div>
-              )}
-            </div>
-          );
-        }),
-      )}
+      <div className="grid grid-cols-9 gap-1 rounded-lg bg-amber-300 p-2">
+        {board.map((row, y) =>
+          row.map((cell, x) => {
+            const key = `${x}-${y}`;
+            const selectedCell = selected?.x === x && selected.y === y;
+            const legal = legalSet.has(key);
+            const isLastFrom = lastMove?.from.x === x && lastMove.from.y === y;
+            const isLastTo = lastMove?.to.x === x && lastMove.to.y === y;
+
+            return (
+              <div
+                key={key}
+                onClick={() => onCellClick(x, y)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => onCellClick(x, y)}
+                className={[
+                  'relative flex h-12 w-12 items-center justify-center border border-amber-900/70 bg-amber-200/80 sm:h-14 sm:w-14',
+                  cell ? 'cursor-pointer' : 'cursor-default',
+                  selectedCell ? 'ring-2 ring-indigo-700' : '',
+                  legal ? 'ring-2 ring-emerald-700' : '',
+                  isLastFrom || isLastTo ? 'ring-2 ring-yellow-600' : '',
+                ].join(' ')}
+              >
+                {cell && (
+                  <div
+                    draggable={canMove && ownPiece(cell)}
+                    onDragStart={() => {
+                      setSelected({ x, y });
+                      onSelect({ x, y });
+                    }}
+                    className={[
+                      'flex h-10 w-10 items-center justify-center rounded-full border-2 border-amber-900 bg-amber-100 text-2xl font-bold shadow-sm sm:h-11 sm:w-11',
+                      isRedPiece(cell) ? 'text-red-700' : 'text-slate-900',
+                    ].join(' ')}
+                  >
+                    {pieceLabels[cell as PieceCode]}
+                  </div>
+                )}
+              </div>
+            );
+          }),
+        )}
+      </div>
+
+      <div className="grid grid-cols-9 gap-1 px-1 text-center text-xs font-semibold text-amber-950/90">
+        {[...fileLabels].reverse().map((label) => (
+          <span key={`bottom-${label}`}>{label}</span>
+        ))}
+      </div>
     </div>
   );
 }

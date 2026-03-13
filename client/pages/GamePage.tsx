@@ -29,20 +29,20 @@ export function GamePage({
   error,
 }: GamePageProps) {
   return (
-    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 p-6 lg:grid-cols-[auto_320px]">
+    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 p-4 sm:p-6 lg:grid-cols-[auto_320px]">
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-white">
-          <h2 className="text-2xl font-semibold">Room #{room.id}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-900/60 bg-amber-700/80 p-3 text-amber-950">
+          <h2 className="text-xl font-bold sm:text-2xl">Room #{room.id}</h2>
           <div className="space-x-2">
             <button
               onClick={onLeaveRoom}
-              className="rounded bg-slate-700 px-3 py-1 hover:bg-slate-600"
+              className="rounded-lg border border-amber-900/70 bg-red-800 px-3 py-1 font-semibold text-amber-100 hover:bg-red-900"
             >
               Leave Room
             </button>
             <button
               onClick={onRequestRematch}
-              className="rounded bg-emerald-700 px-3 py-1 hover:bg-emerald-600"
+              className="rounded-lg border border-amber-900/70 bg-amber-900 px-3 py-1 font-semibold text-amber-100 hover:bg-amber-950"
             >
               Rematch
             </button>
@@ -60,7 +60,9 @@ export function GamePage({
         />
 
         {error && (
-          <p className="rounded bg-red-900 px-3 py-2 text-red-100">{error}</p>
+          <p className="rounded-lg border border-rose-700 bg-rose-900/80 px-3 py-2 text-rose-100">
+            {error}
+          </p>
         )}
       </div>
 

@@ -6,6 +6,8 @@ import { MainMenuPage } from './pages/MainMenuPage';
 import { fetchAvailableRooms } from './services/api';
 import { Room } from './types';
 
+const USERNAME_STORAGE_KEY = 'co_tuong_username';
+
 export default function App() {
   const {
     room,
@@ -27,6 +29,15 @@ export default function App() {
   const [screen, setScreen] = useState<'menu' | 'lobby' | 'game'>('menu');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+
+  useEffect(() => {
+    const savedUsername = window.localStorage.getItem(USERNAME_STORAGE_KEY);
+    if (savedUsername) {
+      setUsername(savedUsername);
+    }
+  }, []);
 
   useEffect(() => {
     if (room) {
@@ -45,14 +56,37 @@ export default function App() {
     }
   }
 
+  function handleUsernameChange(value: string) {
+    setUsername(value);
+    if (usernameError && value.trim().length >= 2) {
+      setUsernameError('');
+    }
+  }
+
+  function getValidatedUsername(): string | null {
+    const trimmed = username.trim();
+    if (trimmed.length < 2) {
+      setUsernameError('Username must be at least 2 characters.');
+      return null;
+    }
+
+    setUsernameError('');
+    window.localStorage.setItem(USERNAME_STORAGE_KEY, trimmed);
+    return trimmed;
+  }
+
   if (screen === 'lobby') {
     return (
-      <div className="min-h-screen bg-slate-900 p-6">
+      <div className="min-h-screen bg-amber-950/95 p-4 sm:p-6">
         <Lobby
           rooms={rooms}
           loading={loadingRooms}
           onRefresh={loadRooms}
-          onJoinRoom={joinRoom}
+          onJoinRoom={(roomId) => {
+            const validUsername = getValidatedUsername();
+            if (!validUsername) return;
+            joinRoom(roomId, validUsername);
+          }}
           onBack={() => setScreen('menu')}
         />
       </div>
@@ -61,7 +95,7 @@ export default function App() {
 
   if (room) {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-amber-950/95">
         <GamePage
           room={room}
           role={role}
@@ -79,19 +113,32 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-amber-950/95">
       <MainMenuPage
-        onCreateRoom={createRoom}
-        onQuickMatch={quickMatch}
+        username={username}
+        usernameError={usernameError}
+        onUsernameChange={handleUsernameChange}
+        onCreateRoom={() => {
+          const validUsername = getValidatedUsername();
+          if (!validUsername) return;
+          createRoom(validUsername);
+        }}
+        onQuickMatch={() => {
+          const validUsername = getValidatedUsername();
+          if (!validUsername) return;
+          quickMatch(validUsername);
+        }}
         onFindRoom={async () => {
+          const validUsername = getValidatedUsername();
+          if (!validUsername) return;
           setScreen('lobby');
           await loadRooms();
         }}
       />
       {queued && (
-        <p className="text-center text-amber-300">Searching opponent...</p>
+        <p className="text-center text-amber-200">Searching opponent...</p>
       )}
-      {error && <p className="text-center text-red-300">{error}</p>}
+      {error && <p className="text-center text-rose-300">{error}</p>}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { nanoid } from 'nanoid';
 import { createInitialBoard } from './game-engine/board.js';
 import { RoomModel } from './models/Room.js';
-import { RoomRuntime } from './types.js';
+import { MatchmakingEntry, RoomRuntime } from './types.js';
 
 const rooms = new Map<string, RoomRuntime>();
-const matchmakingQueue: string[] = [];
+const matchmakingQueue: MatchmakingEntry[] = [];
 
 export function serializeRoom(room: RoomRuntime) {
   return {
@@ -13,6 +13,7 @@ export function serializeRoom(room: RoomRuntime) {
     redPlayer: room.redPlayer,
     blackPlayer: room.blackPlayer,
     spectators: room.spectators,
+    playerNames: room.playerNames,
     boardState: room.boardState,
     turn: room.turn,
     status: room.status,
@@ -22,7 +23,10 @@ export function serializeRoom(room: RoomRuntime) {
   };
 }
 
-export async function createRoom(hostSocketId: string): Promise<RoomRuntime> {
+export async function createRoom(
+  hostSocketId: string,
+  hostUsername: string,
+): Promise<RoomRuntime> {
   const id = nanoid(10);
   const room: RoomRuntime = {
     id,
@@ -30,6 +34,9 @@ export async function createRoom(hostSocketId: string): Promise<RoomRuntime> {
     redPlayer: hostSocketId,
     blackPlayer: null,
     spectators: [],
+    playerNames: {
+      [hostSocketId]: hostUsername,
+    },
     boardState: createInitialBoard(),
     turn: 'red',
     status: 'waiting',
@@ -48,6 +55,7 @@ export async function createRoom(hostSocketId: string): Promise<RoomRuntime> {
       redPlayer: room.redPlayer,
       blackPlayer: room.blackPlayer,
       spectators: room.spectators,
+      playerNames: room.playerNames,
       boardState: room.boardState,
       turn: room.turn,
       status: room.status,
@@ -80,6 +88,7 @@ export async function updateRoom(room: RoomRuntime): Promise<void> {
       redPlayer: room.redPlayer,
       blackPlayer: room.blackPlayer,
       spectators: room.spectators,
+      playerNames: room.playerNames,
       boardState: room.boardState,
       turn: room.turn,
       status: room.status,
@@ -90,12 +99,17 @@ export async function updateRoom(room: RoomRuntime): Promise<void> {
 }
 
 export function removeSocketFromQueue(socketId: string): void {
-  const index = matchmakingQueue.indexOf(socketId);
+  const index = matchmakingQueue.findIndex(
+    (entry) => entry.socketId === socketId,
+  );
   if (index >= 0) matchmakingQueue.splice(index, 1);
 }
 
-export function enqueuePlayer(socketId: string): string | null {
-  if (matchmakingQueue.includes(socketId)) {
+export function enqueuePlayer(
+  socketId: string,
+  username: string,
+): MatchmakingEntry | null {
+  if (matchmakingQueue.some((entry) => entry.socketId === socketId)) {
     return null;
   }
 
@@ -104,6 +118,6 @@ export function enqueuePlayer(socketId: string): string | null {
     return opponent;
   }
 
-  matchmakingQueue.push(socketId);
+  matchmakingQueue.push({ socketId, username });
   return null;
 }

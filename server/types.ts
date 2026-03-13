@@ -43,10 +43,16 @@ export interface RoomRuntime {
   redPlayer: string | null;
   blackPlayer: string | null;
   spectators: string[];
+  playerNames: Record<string, string>;
   boardState: Board;
   turn: PlayerColor;
   status: RoomStatus;
   moveHistory: MoveRecord[];
   winner: PlayerColor | null;
   createdAt: Date;
+}
+
+export interface MatchmakingEntry {
+  socketId: string;
+  username: string;
 }

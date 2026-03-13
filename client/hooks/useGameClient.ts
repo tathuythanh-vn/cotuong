@@ -89,16 +89,16 @@ export function useGameClient() {
     return room.status === 'playing' && room.turn === role;
   }, [room, role]);
 
-  function createRoom() {
-    socket.emit('create_room');
+  function createRoom(username: string) {
+    socket.emit('create_room', { username });
   }
 
-  function quickMatch() {
-    socket.emit('quick_match');
+  function quickMatch(username: string) {
+    socket.emit('quick_match', { username });
   }
 
-  function joinRoom(roomId: string) {
-    socket.emit('join_room', { roomId });
+  function joinRoom(roomId: string, username: string) {
+    socket.emit('join_room', { roomId, username });
   }
 
   function leaveRoom() {

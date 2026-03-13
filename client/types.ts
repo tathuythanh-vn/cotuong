@@ -43,6 +43,7 @@ export interface Room {
   redPlayer: string | null;
   blackPlayer: string | null;
   spectators: string[];
+  playerNames: Record<string, string>;
   boardState: Board;
   turn: PlayerColor;
   status: RoomStatus;

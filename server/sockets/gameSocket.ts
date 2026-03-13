@@ -18,13 +18,22 @@ import {
 } from '../roomStore.js';
 import { Move, PlayerColor } from '../types.js';
 
+function sanitizeUsername(username?: string): string | null {
+  const trimmed = username?.trim();
+  if (!trimmed || trimmed.length < 2) return null;
+  return trimmed.slice(0, 20);
+}
+
 /** Assigns the connecting socket to a room role with spectator fallback. */
 function assignPlayerRole(
   roomId: string,
   socket: Socket,
+  username: string,
 ): 'red' | 'black' | 'spectator' | null {
   const room = getRoom(roomId);
   if (!room) return null;
+
+  room.playerNames[socket.id] = username;
 
   if (!room.redPlayer) {
     room.redPlayer = socket.id;
@@ -61,8 +70,16 @@ function findPlayerRoom(socketId: string): string | null {
 /** Registers all multiplayer room/game events for Xiangqi gameplay. */
 export function registerGameSocket(io: Server): void {
   io.on('connection', (socket) => {
-    socket.on('create_room', async () => {
-      const room = await createRoom(socket.id);
+    socket.on('create_room', async (payload?: { username?: string }) => {
+      const username = sanitizeUsername(payload?.username);
+      if (!username) {
+        socket.emit('error_message', {
+          message: 'Username must be at least 2 characters',
+        });
+        return;
+      }
+
+      const room = await createRoom(socket.id, username);
       socket.join(room.id);
 
       socket.emit('room_created', {
@@ -72,19 +89,28 @@ export function registerGameSocket(io: Server): void {
       });
     });
 
-    socket.on('quick_match', async () => {
-      const matched = enqueuePlayer(socket.id);
+    socket.on('quick_match', async (payload?: { username?: string }) => {
+      const username = sanitizeUsername(payload?.username);
+      if (!username) {
+        socket.emit('error_message', {
+          message: 'Username must be at least 2 characters',
+        });
+        return;
+      }
+
+      const matched = enqueuePlayer(socket.id, username);
       if (!matched) {
         socket.emit('queued', { message: 'Waiting for opponent...' });
         return;
       }
 
-      const room = await createRoom(matched);
+      const room = await createRoom(matched.socketId, matched.username);
       room.blackPlayer = socket.id;
+      room.playerNames[socket.id] = username;
       room.status = 'playing';
       await updateRoom(room);
 
-      io.sockets.sockets.get(matched)?.join(room.id);
+      io.sockets.sockets.get(matched.socketId)?.join(room.id);
       socket.join(room.id);
 
       io.to(room.id).emit('game_started', {
@@ -92,35 +118,50 @@ export function registerGameSocket(io: Server): void {
       });
     });
 
-    socket.on('join_room', async (payload: { roomId: string }) => {
-      const room = getRoom(payload.roomId);
-      if (!room) {
-        socket.emit('error_message', { message: 'Room not found' });
-        return;
-      }
+    socket.on(
+      'join_room',
+      async (payload: { roomId: string; username?: string }) => {
+        const username = sanitizeUsername(payload?.username);
+        if (!username) {
+          socket.emit('error_message', {
+            message: 'Username must be at least 2 characters',
+          });
+          return;
+        }
 
-      const role = assignPlayerRole(room.id, socket);
-      if (!role) {
-        socket.emit('error_message', { message: 'Unable to join room' });
-        return;
-      }
+        const room = getRoom(payload.roomId);
+        if (!room) {
+          socket.emit('error_message', { message: 'Room not found' });
+          return;
+        }
 
-      socket.join(room.id);
-      await updateRoom(room);
+        const role = assignPlayerRole(room.id, socket, username);
+        if (!role) {
+          socket.emit('error_message', { message: 'Unable to join room' });
+          return;
+        }
 
-      socket.emit('room_joined', {
-        room: serializeRoom(room),
-        role,
-      });
+        socket.join(room.id);
+        await updateRoom(room);
 
-      socket.to(room.id).emit('player_joined', { socketId: socket.id, role });
-
-      if (room.redPlayer && room.blackPlayer && room.status === 'playing') {
-        io.to(room.id).emit('game_started', {
+        socket.emit('room_joined', {
           room: serializeRoom(room),
+          role,
         });
-      }
-    });
+
+        socket.to(room.id).emit('player_joined', {
+          socketId: socket.id,
+          role,
+          username,
+        });
+
+        if (room.redPlayer && room.blackPlayer && room.status === 'playing') {
+          io.to(room.id).emit('game_started', {
+            room: serializeRoom(room),
+          });
+        }
+      },
+    );
 
     socket.on('leave_room', async (payload: { roomId: string }) => {
       const room = getRoom(payload.roomId);
@@ -129,6 +170,7 @@ export function registerGameSocket(io: Server): void {
       if (room.redPlayer === socket.id) room.redPlayer = null;
       if (room.blackPlayer === socket.id) room.blackPlayer = null;
       room.spectators = room.spectators.filter((id) => id !== socket.id);
+      delete room.playerNames[socket.id];
 
       if (!room.redPlayer || !room.blackPlayer) {
         room.status = room.status === 'finished' ? 'finished' : 'waiting';
@@ -291,6 +333,7 @@ export function registerGameSocket(io: Server): void {
       if (room.redPlayer === socket.id) room.redPlayer = null;
       if (room.blackPlayer === socket.id) room.blackPlayer = null;
       room.spectators = room.spectators.filter((id) => id !== socket.id);
+      delete room.playerNames[socket.id];
 
       if (!room.redPlayer || !room.blackPlayer) {
         room.status = room.status === 'finished' ? 'finished' : 'waiting';
