@@ -50,6 +50,7 @@ export interface RoomRuntime {
   moveHistory: MoveRecord[];
   winner: PlayerColor | null;
   createdAt: Date;
+  lastActivityAt: Date;
 }
 
 export interface MatchmakingEntry {

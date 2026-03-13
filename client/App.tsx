@@ -17,6 +17,10 @@ export default function App() {
     canMove,
     lastMove,
     legalMoves,
+    chatMessages,
+    rematchVote,
+    surrenderState,
+    isGamePaused,
     createRoom,
     quickMatch,
     joinRoom,
@@ -24,6 +28,9 @@ export default function App() {
     makeMove,
     requestLegalMoves,
     requestRematch,
+    requestSurrender,
+    respondSurrender,
+    sendChatMessage,
   } = useGameClient();
 
   const [screen, setScreen] = useState<'menu' | 'lobby' | 'game'>('menu');
@@ -95,7 +102,7 @@ export default function App() {
 
   if (room) {
     return (
-      <div className="min-h-screen bg-amber-950/95">
+      <div className="min-h-screen">
         <GamePage
           room={room}
           role={role}
@@ -106,6 +113,13 @@ export default function App() {
           onSelect={requestLegalMoves}
           onLeaveRoom={leaveRoom}
           onRequestRematch={requestRematch}
+          onRequestSurrender={requestSurrender}
+          onRespondSurrender={respondSurrender}
+          rematchVote={rematchVote}
+          surrenderState={surrenderState}
+          isGamePaused={isGamePaused}
+          chatMessages={chatMessages}
+          onSendChatMessage={sendChatMessage}
           error={error}
         />
       </div>

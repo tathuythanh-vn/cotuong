@@ -43,6 +43,7 @@ export async function createRoom(
     moveHistory: [],
     winner: null,
     createdAt: new Date(),
+    lastActivityAt: new Date(),
   };
 
   rooms.set(id, room);
@@ -96,6 +97,17 @@ export async function updateRoom(room: RoomRuntime): Promise<void> {
     },
     { new: true },
   );
+}
+
+export function markRoomActivity(roomId: string): void {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  room.lastActivityAt = new Date();
+}
+
+export async function deleteRoom(roomId: string): Promise<void> {
+  rooms.delete(roomId);
+  await RoomModel.deleteOne({ id: roomId });
 }
 
 export function removeSocketFromQueue(socketId: string): void {

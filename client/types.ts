@@ -37,6 +37,27 @@ export interface MoveRecord extends Move {
   createdAt: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  senderSocketId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface RematchVoteState {
+  votes: number;
+  required: number;
+  requestedByName?: string;
+}
+
+export interface SurrenderState {
+  phase: 'incoming' | 'outgoing';
+  requesterSocketId: string;
+  requesterName: string;
+}
+
 export interface Room {
   id: string;
   hostPlayer: string;
